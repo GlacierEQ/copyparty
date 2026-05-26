@@ -1,7 +1,7 @@
 # [`u2c.py`](u2c.py)
 * command-line up2k client [(webm)](https://ocv.me/stuff/u2cli.webm)
 * file uploads, file-search, autoresume of aborted/broken uploads
-* sync local folder to server
+* [sync local folder to server](https://github.com/9001/copyparty/#folder-sync)
 * generally faster than browsers
 * if something breaks just restart it
 
@@ -26,12 +26,12 @@ and consider using [../docs/rclone.md](../docs/rclone.md) instead; usually a bit
 ## to run this on windows:
 * install [winfsp](https://github.com/billziss-gh/winfsp/releases/latest) and [python 3](https://www.python.org/downloads/)
   * [x] add python 3.x to PATH (it asks during install)
-* `python -m pip install --user fusepy` (or grab a copy of `fuse.py` from the `connect` page on your copyparty, and keep it in the same folder)
+* `python -m pip install --user mfusepy` (or grab a copy of `mfusepy.py` from the `connect` page on your copyparty, and keep it in the same folder)
 * `python ./partyfuse.py n: http://192.168.1.69:3923/`
 
 10% faster in [msys2](https://www.msys2.org/), 700% faster if debug prints are enabled:
 * `pacman -S mingw64/mingw-w64-x86_64-python{,-pip}`
-* `/mingw64/bin/python3 -m pip install --user fusepy`
+* `/mingw64/bin/python3 -m pip install --user mfusepy`
 * `/mingw64/bin/python3 ./partyfuse.py [...]`
 
 you could replace winfsp with [dokan](https://github.com/dokan-dev/dokany/releases/latest), let me know if you [figure out how](https://github.com/dokan-dev/dokany/wiki/FUSE)  

@@ -1,13 +1,12 @@
-FROM    alpine:3.18
+FROM    alpine:3.23
 WORKDIR /z
-ENV     ver_asmcrypto=c72492f4a66e17a0e5dd8ad7874de354f3ccdaa5 \
-        ver_hashwasm=4.12.0 \
+ENV     ver_hashwasm=4.12.0 \
         ver_marked=4.3.0 \
-        ver_dompf=3.2.6 \
+        ver_dompf=3.4.1 \
         ver_mde=2.18.0 \
         ver_codemirror=5.65.18 \
         ver_fontawesome=5.13.0 \
-        ver_prism=1.29.0 \
+        ver_prism=1.30.0 \
         ver_zopfli=1.0.3
 
 # versioncheck:
@@ -16,19 +15,20 @@ ENV     ver_asmcrypto=c72492f4a66e17a0e5dd8ad7874de354f3ccdaa5 \
 # https://github.com/codemirror/codemirror5/releases
 # https://github.com/cure53/DOMPurify/releases
 # https://github.com/Daninet/hash-wasm/releases
-# https://github.com/openpgpjs/asmcrypto.js/commits/main/
 # https://github.com/google/zopfli/tags
 
 
 # download;
 # the scp url is regular latin from https://fonts.googleapis.com/css2?family=Source+Code+Pro&display=swap
 RUN     mkdir -p /z/dist/no-pk \
+        && wget https://ocv.me/dev/fonts/orbitron.woff2 -O /z/dist/no-pk/orbitron.woff2 \
+        && sha512sum /z/dist/no-pk/orbitron.woff2 | tee /dev/stderr | grep -q b36a69a1b483ca735a3e7d026cdc5e993b8359bbf69b05deadc369fa759f88fe6087bbbbc0be51e62daf034c090df7ee096e5b07884c494aebf56db0e2bc53f7 \
         && wget https://fonts.gstatic.com/s/sourcecodepro/v11/HI_SiYsKILxRpg3hIP6sJ7fM7PqlPevW.woff2 -O scp.woff2 \
         && apk add \
                 bash brotli cmake make g++ git gzip lame npm patch pigz \
-                python3 python3-dev py3-brotli sox tar unzip wget \
+                python3 python3-dev py3-pip py3-brotli sox tar unzip wget \
         && rm -f /usr/lib/python3*/EXTERNALLY-MANAGED \
-        && wget https://github.com/openpgpjs/asmcrypto.js/archive/$ver_asmcrypto.tar.gz -O asmcrypto.tgz \
+        && pip install strip_hints \
         && wget https://github.com/markedjs/marked/archive/v$ver_marked.tar.gz -O marked.tgz \
         && wget https://github.com/Ionaru/easy-markdown-editor/archive/$ver_mde.tar.gz -O mde.tgz \
         && wget https://github.com/codemirror/codemirror5/archive/$ver_codemirror.tar.gz -O codemirror.tgz \
@@ -37,40 +37,38 @@ RUN     mkdir -p /z/dist/no-pk \
         && wget https://github.com/google/zopfli/archive/zopfli-$ver_zopfli.tar.gz -O zopfli.tgz \
         && wget https://github.com/Daninet/hash-wasm/releases/download/v$ver_hashwasm/hash-wasm@$ver_hashwasm.zip -O hash-wasm.zip \
         && wget https://github.com/PrismJS/prism/archive/refs/tags/v$ver_prism.tar.gz -O prism.tgz \
-        && wget https://files.pythonhosted.org/packages/04/0b/4506cb2e831cea4b0214d3625430e921faaa05a7fb520458c75a2dbd2152/fusepy-3.0.1.tar.gz -O fusepy.tgz \
+        && wget https://files.pythonhosted.org/packages/91/47/746287c8962274f73ee25edb3840d80899464bfffbe2c435424c2d60a071/mfusepy-3.1.1.tar.gz -O mfusepy.tgz \
         && (mkdir hash-wasm \
             && cd hash-wasm \
             && unzip ../hash-wasm.zip) \
-        && (tar -xf asmcrypto.tgz \
-            && cd asmcrypto.js-$ver_asmcrypto \
-            && npm install ) \
-        && (tar -xf marked.tgz \
+        && (tar --no-same-owner -xf marked.tgz \
             && cd marked-$ver_marked \
             && npm install \
             && npm i grunt uglify-js -g ) \
-        && (tar -xf codemirror.tgz \
+        && (tar --no-same-owner -xf codemirror.tgz \
             && cd codemirror5-$ver_codemirror \
             && npm install ) \
-        && (tar -xf mde.tgz \
+        && (tar --no-same-owner -xf mde.tgz \
             && cd easy-markdown-editor* \
             && npm install \
             && npm i gulp-cli -g ) \
-        && tar -xf dompurify.tgz \
-        && tar -xf prism.tgz \
-        && tar -xf fusepy.tgz \
+        && tar --no-same-owner -xf dompurify.tgz \
+        && tar --no-same-owner -xf prism.tgz \
+        && tar --no-same-owner -xf mfusepy.tgz \
         && unzip fontawesome.zip \
-        && tar -xf zopfli.tgz
+        && tar --no-same-owner -xf zopfli.tgz
 
 
-COPY    busy-mp3.sh /z/
-RUN     /z/busy-mp3.sh \
-        && mv -v /dev/shm/busy.mp3.gz /z/dist
+#COPY    busy-mp3.sh /z/
+#RUN     /z/busy-mp3.sh \
+#        && mv -v /dev/shm/busy.mp3.gz /z/dist
 
 
 # build fonttools (which needs zopfli)
-RUN     tar -xf zopfli.tgz \
+RUN     tar --no-same-owner -xf zopfli.tgz \
         && cd zopfli* \
         && cmake \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_INSTALL_PREFIX=/usr \
             -DZOPFLI_BUILD_SHARED=ON \
             -B build \
@@ -79,13 +77,6 @@ RUN     tar -xf zopfli.tgz \
         && make -C build install \
         && python3 -m ensurepip \
         && python3 -m pip install fonttools zopfli
-
-
-# build asmcrypto
-RUN     cd asmcrypto.js-$ver_asmcrypto \
-        && echo "export { Sha512 } from './hash/sha512/sha512';" > src/entry-export_all.ts \
-        && node -r esm build.js \
-        && awk '/HMAC state/{o=1}  /var HEAP/{o=0}  /function hmac_reset/{o=1}  /return \{/{o=0}  /var __extends =/{o=1}  /var Hash =/{o=0}  /hmac_|pbkdf2_/{next}  o{next}  {gsub(/IllegalStateError/,"Exception")}  {sub(/^ +/,"");sub(/^\/\/ .*/,"");sub(/;$/," ;")}  1' < asmcrypto.all.es5.js > /z/dist/sha512.ac.js
 
 
 # build hash-wasm
@@ -160,16 +151,23 @@ RUN     cd /z/dist \
         && rmdir no-pk
 
 
-# build fusepy
-COPY    uncomment.py /z
-RUN     mv /z/fusepy-3.0.1/fuse.py /z/dist/f1 \
+# build mfusepy -- just sizegolfing for the sfx, mfusepy.py works fine as-is
+COPY    uncomment.py unhint.py /z
+RUN     mv /z/mfusepy-3.1.1/mfusepy.py /z/dist/ \
         && cd /z/dist \
+        && python3 /z/unhint.py \
+        && rm -f uh \
+        && mv mfusepy.py f1 \
         && python3 /z/uncomment.py f1 \
-        && sed -ri '/self.__critical_exception = e/d' f1 \
-        && awk '/^log =/{s=0} !s; /^from traceback im/{s=1;print"from functools import partial";print"basestring = str"}' <f1 >f2 \
-        && awk '/LoggingMixIn:/{exit} --s<0;/self.use_ns = getattr/{s=7}' <f2 >f1 \
-        && awk "/if _machine =/{s=0} /'(mips|ppc|ppc64)'/{s=1} !s" <f1 >f2 \
-        && rm f1 && mv f2 fuse.py
+        && sed -ri '/self.__critical_exception/d; /^from (typing|collections.abc) import/d' f1 \
+        && sed -ri '/^(FieldsEntry|BitFieldsEntry|ReadDirResult) =/d' f1 \
+        && awk "/if TYPE_CHECKING:/{s=1;sub(/TYPE_CHECKING/,"1");print}!s;/else:/{s=0}" <f1 >f2 \
+        && awk '/^def _nullable_dummy_function/{print"class Operations:\n    pass";exit};1' <f2 >f1 \
+        && awk '/^# Note that/{s=3} --s<0; /self.use_ns = getattr/{s=16}' <f1 >f2 \
+        && awk "/if _machine =/{s=0} /_machine == '(mips|ppc|ppc64)'/{s=1} !s" <f2 >f1 \
+        && awk '/else:/{s=0} /elif _system == .NetBSD/{s=1} !s' <f1 >f2 \
+        && awk '/^if _system == .NetBSD_False/{s=1;print"if 0:\n    pass"} /^elif/{s=0} !s' <f2 >f1 \
+        && rm f2 && mv f1 mfusepy.py
 
 
 # git diff -U2 --no-index marked-1.1.0-orig/ marked-1.1.0-edit/ -U2 | sed -r '/^index /d;s`^(diff --git a/)[^/]+/(.* b/)[^/]+/`\1\2`; s`^(---|\+\+\+) ([ab]/)[^/]+/`\1 \2`' > ../dev/copyparty/scripts/deps-docker/marked-ln.patch
